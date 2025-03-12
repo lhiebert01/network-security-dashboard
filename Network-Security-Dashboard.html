@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Security Attack Visualizer</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            border-bottom: 4px solid #e74c3c;
+        }
+        h1 {
+            margin: 0;
+        }
+        
+        /* Header specific styles */
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .header-logo {
+            display: flex;
+            gap: 15px;
+            margin-right: 20px;
+        }
+
+        .header-logo i {
+            color: #3498db;
+            text-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+        }
+
+        .header-text {
+            text-align: left;
+        }
+
+        .author-attribution {
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+
+        .author-attribution a {
+            color: #3498db;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .author-attribution a:hover {
+            color: #e74c3c;
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+            }
+            
+            .header-logo {
+                margin-right: 0;
+                margin-bottom: 15px;
+            }
+            
+            .header-text {
+                text-align: center;
+            }
+        }
+        
+        .attack-selector {
+            margin: 20px 0;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .layer-selector {
+            background-color: #34495e;
+            color: white;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+            width: 48%;
+        }
+        .layer-selector h3 {
+            margin-top: 0;
+            border-bottom: 1px solid #95a5a6;
+            padding-bottom: 10px;
+        }
+        .attack-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .attack-button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .attack-button:hover {
+            background-color: #2980b9;
+        }
+        .attack-button.active {
+            background-color: #e74c3c;
+        }
+        .visualization {
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .visualization-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .packet-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .packet {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            font-family: monospace;
+            white-space: pre-wrap;
+            position: relative;
+        }
+        .packet:nth-child(odd) {
+            background-color: #f9f9f9;
+        }
+        .packet.flagged {
+            background-color: #ffecec;
+            border-left: 4px solid #e74c3c;
+        }
+        .attack-info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #ecf0f1;
+            border-radius: 5px;
+        }
+        .pattern {
+            font-family: monospace;
+            background-color: #34495e;
+            color: #ecf0f1;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        .play-button {
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .play-button:hover {
+            background-color: #27ae60;
+        }
+        .timestamp {
+            color: #7f8c8d;
+            margin-right: 10px;
+        }
+        .ip-info {
+            display: inline-block;
+            margin-right: 15px;
+        }
+        .src {
+            color: #2980b9;
+        }
+        .dst {
+            color: #8e44ad;
+        }
+        .port {
+            color: #16a085;
+        }
+        .flag {
+            color: #c0392b;
+            font-weight: bold;
+        }
+        .size {
+            color: #27ae60;
+        }
+        .ttl {
+            color: #d35400;
+        }
+        .protocol {
+            font-weight: bold;
+        }
+        .alert {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background-color: #e74c3c;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.8em;
+        }
+        .timeline {
+            height: 8px;
+            background-color: #ecf0f1;
+            margin-top: 10px;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        .timeline-progress {
+            height: 100%;
+            background-color: #3498db;
+            width: 0%;
+            transition: width 0.3s linear;
+        }
+        .metrics {
+            display: flex;
+            margin-top: 15px;
+            gap: 15px;
+        }
+        .metric {
+            flex: 1;
+            background-color: #ecf0f1;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .metric-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin: 5px 0;
+            color: #2c3e50;
+        }
+        .detection-alert {
+            background-color: #e74c3c;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            display: none;
+        }
+        .detection-alert.visible {
+            display: block;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { background-color: #e74c3c; }
+            50% { background-color: #c0392b; }
+            100% { background-color: #e74c3c; }
+        }
+        /* Trusted/untrusted indicator style */
+        .trust-indicator {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            margin-left: 5px;
+        }
+        .trusted {
+            background-color: #27ae60;
+            color: white;
+        }
+        .untrusted {
+            background-color: #f39c12;
+            color: white;
+        }
+        /* GenAI Log Analyzer button styles */
+        .genai-btn-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .genai-log-btn {
+            background-color: #9b59b6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .genai-log-btn:hover {
+            background-color: #8e44ad;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .genai-log-btn i {
+            font-size: 20px;
+        }
+    </style>
+    <!-- Add Font Awesome for icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="header-logo">
+                    <i class="fas fa-shield-alt fa-2x"></i>
+                    <i class="fas fa-search fa-2x"></i>
+                    <i class="fas fa-server fa-2x"></i>
+                </div>
+                <div class="header-text">
+                    <h1>Network Security Attack Visualizer</h1>
+                    <p>Analyze and visualize common network attacks through packet inspection</p>
+                </div>
+            </div>
+            <div class="author-attribution">
+                <p>Designed by <a href="https://www.linkedin.com/in/lindsayhiebert/" target="_blank" rel="noopener noreferrer">
+                    <i class="fab fa-linkedin"></i> Lindsay Hiebert
+                </a></p>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="attack-selector">
+            <div class="layer-selector">
+                <h3>Layer 3 (Network) Attacks</h3>
+                <div class="attack-buttons" id="layer3-buttons">
+                    <button class="attack-button active" data-attack="port-scan">Port Scanning</button>
+                    <button class="attack-button" data-attack="ddos">DDoS Attack</button>
+                    <button class="attack-button" data-attack="ip-spoofing">IP Spoofing</button>
+                    <button class="attack-button" data-attack="syn-flood">SYN Flooding</button>
+                    <button class="attack-button" data-attack="icmp-flood">ICMP Flood</button>
+                    <button class="attack-button" data-attack="lateral-movement">Lateral Movement</button>
+                </div>
+            </div>
+            <div class="layer-selector">
+                <h3>Layer 2 (Data Link) Attacks</h3>
+                <div class="attack-buttons" id="layer2-buttons">
+                    <button class="attack-button" data-attack="mac-flood">MAC Flooding</button>
+                    <button class="attack-button" data-attack="arp-spoofing">ARP Spoofing</button>
+                    <button class="attack-button" data-attack="vlan-hopping">VLAN Hopping</button>
+                    <button class="attack-button" data-attack="mac-spoofing">MAC Spoofing</button>
+                    <button class="attack-button" data-attack="dhcp-starvation">DHCP Starvation</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- GenAI Log Analyzer Button -->
+        <div class="genai-btn-container">
+            <button id="genai-log-analyzer" class="genai-log-btn" onclick="window.open('https://genai-network-analyzer.onrender.com/', '_blank')">
+                <i class="fas fa-brain"></i> GenAI Log Analyzer
+            </button>
+        </div>
+
+        <div class="visualization">
+            <div class="visualization-header">
+                <h2 id="attack-title">Port Scanning Attack</h2>
+                <div class="controls">
+                    <button class="play-button" id="play-button">▶ Simulate Attack</button>
+                </div>
+            </div>
+
+            <div class="metrics">
+                <div class="metric">
+                    <div>Packets Analyzed</div>
+                    <div class="metric-value" id="packets-count">0</div>
+                </div>
+                <div class="metric">
+                    <div>Anomaly Score</div>
+                    <div class="metric-value" id="anomaly-score">0%</div>
+                </div>
+                <div class="metric">
+                    <div>Time Elapsed</div>
+                    <div class="metric-value" id="time-elapsed">0s</div>
+                </div>
+            </div>
+
+            <div class="detection-alert" id="detection-alert">
+                <h3>ATTACK DETECTED: <span id="alert-type">Port Scanning</span></h3>
+                <p id="alert-details">Multiple connection attempts to sequential ports detected from 192.168.1.100</p>
+            </div>
+            
+            <div class="timeline">
+                <div class="timeline-progress" id="timeline-progress"></div>
+            </div>
+
+            <div class="packet-container" id="packet-container">
+                <!-- Packets will be inserted here by JavaScript -->
+            </div>
+
+            <div class="attack-info">
+                <h3 id="info-title">Port Scanning Attack</h3>
+                <p id="info-description">An attacker systematically scans multiple ports on a target system to discover available services that might be vulnerable to exploitation.</p>
+                <h4>Detection Pattern:</h4>
+                <div class="pattern" id="info-pattern">
+SIP: 192.168.1.100 -> DIP: 10.0.0.5, Ports: 20, 21, 22, 23, 25... (sequential)
+Timeframe: 30+ connection attempts within 10 seconds
+Trigger: >20 different ports accessed from same SIP to same DIP in <30 seconds
+                </div>
+                <h4>Mitigation Strategies:</h4>
+                <ul id="info-mitigation">
+                    <li>Implement a firewall that limits connection attempts</li>
+                    <li>Use port knocking or single packet authorization</li>
+                    <li>Deploy an IDS/IPS system to detect and block scanning activities</li>
+                    <li>Limit exposed services and close unnecessary ports</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Attack data definitions
+        const attackData = {
+            "port-scan": {
+                title: "Port Scanning Attack",
+                description: "An attacker systematically scans multiple ports on a target system to discover available services that might be vulnerable to exploitation.",
+                pattern: "SIP: 192.168.1.100 -> DIP: 10.0.0.5, Ports: 20, 21, 22, 23, 25... (sequential)\nTimeframe: 30+ connection attempts within 10 seconds\nTrigger: >20 different ports accessed from same SIP to same DIP in <30 seconds",
+                mitigation: [
+                    "Implement a firewall that limits connection attempts",
+                    "Use port knocking or single packet authorization",
+                    "Deploy an IDS/IPS system to detect and block scanning activities",
+                    "Limit exposed services and close unnecessary ports"
+                ],
+                alert: "Multiple connection attempts to sequential ports detected",
+                threshold: 20, // Number of different ports to trigger detection
+                genPacket: function(i) {
+                    const port = 20 + i; // Sequential port scan starting from port 20
+                    return {
+                        timestamp: new Date(),
+                        src_ip: "192.168.1.100",
+                        src_port: Math.floor(Math.random() * 60000) + 1024,
+                        dst_ip: "10.0.0.5",
+                        dst_port: port,
+                        protocol: "TCP",
+                        flags: "SYN",
+                        size: 64,
+                        ttl: 64,
+                        flagged: i >= this.threshold,
+                        alert: i >= this.threshold ? "Port scan detected" : null
+                    };
+                }
+            },
+            "ddos": {
+                title: "DDoS Attack",
+                description: "A Distributed Denial of Service attack where multiple compromised systems flood a target with traffic, causing a denial of service for legitimate users.",
+                pattern: "Multiple SIPs -> DIP: 203.0.113.10, Port: 80\nTraffic volume: >10,000 packets per second\nTrigger: Traffic exceeding 3x baseline for >60 seconds",
+                mitigation: [
+                    "Implement rate limiting at network edge",
+                    "Use traffic filtering and scrubbing services",
+                    "Deploy anycast network architecture",
+                    "Configure automatic scaling for resources",
+                    "Use dedicated DDoS protection services"
+                ],
+                alert: "Abnormal traffic volume from multiple source IPs detected",
+                threshold: 30, // Number of packets to trigger detection
+                genPacket: function(i) {
+                    // For DDoS we use multiple source IPs
+                    const octet3 = Math.floor(i / 256) % 256;
+                    const octet4 = i % 256;
+                    return {
+                        timestamp: new Date(),
+                        src_ip: `45.${Math.floor(Math.random() * 256)}.${octet3}.${octet4}`,
+                        src_port: Math.floor(Math.random() * 60000) + 1024,
+                        dst_ip: "203.0.113.10",
+                        dst_port: 80,
+                        protocol: "TCP",
+                        flags: "SYN",
+                        size: Math.floor(Math.random() * 1000) + 40,
+                        ttl: Math.floor(Math.random() * 32) + 48,
+                        flagged: i >= this.threshold,
+                        alert: i >= this.threshold ? "DDoS attack detected" : null
+                    };
+                }
+            },
+            "ip-spoofing": {
+                title: "IP Spoofing Attack",
+                description: "An attack where the attacker masks their identity by falsifying the source IP address in packet headers to impersonate a trusted source.",
+                pattern: "SIP: 10.0.0.5 (internal IP) arriving on external interface\nSIP: 192.168.1.1 with TTL values inconsistent with network topology\nTrigger: Any packet with impossible routing characteristics",
+                mitigation: [
+                    "Implement ingress and egress filtering (BCP 38)",
+                    "Use authentication mechanisms beyond IP address",
+                    "Deploy a reverse proxy for external communications",
+                    "Monitor for unusual TTL values or impossible routings",
+                    "Implement IPsec for secure communications"
+                ],
+                alert: "Packets with invalid source IPs detected (spoofing)",
+                threshold: 10, // Number of packets to trigger detection
+                genPacket: function(i) {
+                    // For IP spoofing we use private range IPs that shouldn't be on external interface
+                    const spoofed = i >= 5;
+                    const impossible_route = i >= 5;
+                    return {
+                        timestamp: new Date(),
+                        src_ip: spoofed ? "10.0.0." + (i % 255) : "203.0.113." + (i % 255),
+                        src_port: Math.floor(Math.random() * 60000) + 1024,
+                        dst_ip: "104.18.22.46",
+                        dst_port: 443,
+                        protocol: "TCP",
+                        flags: "SYN",
+                        size: 64,
+                        ttl: impossible_route ? 255 : 64, // Impossibly high TTL is suspicious
+                        flagged: spoofed || impossible_route,
+                        alert: spoofed ? "Spoofed source IP detected" : null
+                    };
+                }
+            },
+            "syn-flood": {
+                title: "SYN Flooding Attack",
+                description: "A denial-of-service attack that exploits the TCP handshake by sending multiple SYN packets without completing the handshake, exhausting server resources.",
+                pattern: "SIP: Multiple -> DIP: 172.16.1.10, Port: 443\nTCP Flags: SYN set, ACK not set\nRate: >100 SYN packets per second with no completed handshakes\nTrigger: SYN:ACK ratio >10:1 for >5 seconds",
+                mitigation: [
+                    "Implement SYN cookies",
+                    "Increase the TCP backlog queue",
+                    "Use a stateful firewall with TCP SYN protection",
+                    "Deploy rate limiting for incoming SYN packets",
+                    "Use load balancers with SYN flood protection"
+                ],
+                alert: "High volume of SYN packets with no completed handshakes",
+                threshold: 25, // Number of packets to trigger detection
+                genPacket: function(i) {
+                    const srcOctet = Math.floor(Math.random() * 256);
+                    return {
+                        timestamp: new Date(),
+                        src_ip: `98.${srcOctet}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`,
+                        src_port: Math.floor(Math.random() * 60000) + 1024,
+                        dst_ip: "172.16.1.10",
+                        dst_port: 443,
+                        protocol: "TCP",
+                        flags: "SYN",
+                        size: 64,
+                        ttl: 64,
+                        flagged: i >= this.threshold,
+                        alert: i >= this.threshold ? "SYN flood detected" : null
+                    };
+                }
+            },
+            "icmp-flood": {
+                title: "ICMP Flood Attack",
+                description: "A denial-of-service attack where the attacker overwhelms a target with ICMP Echo Request (ping) packets, consuming bandwidth and processing resources.",
+                pattern: "SIP: Multiple -> DIP: 203.0.113.54\nProtocol: ICMP Type 8 (Echo Request)\nRate: >100 ICMP packets per second\nTrigger: ICMP traffic >20% of total bandwidth for >10 seconds",
+                mitigation: [
+                    "Rate limit ICMP traffic at network border",
+                    "Block ICMP Echo Request (Type 8) packets from external sources",
+                    "Implement traffic analysis to detect unusual ICMP patterns",
+                    "Use dedicated DDoS protection services",
+                    "Configure network devices to deprioritize ICMP traffic during congestion"
+                ],
+                alert: "Excessive ICMP Echo Request packets detected",
+                threshold: 30, // Number of packets to trigger detection
+                genPacket: function(i) {
+                    return {
+                        timestamp: new Date(),
+                        src_ip: `107.${i % 256}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`,
+                        src_port: "-",
+                        dst_ip: "203.0.113.54",
+                        dst_port: "-",
+                        protocol: "ICMP",
+                        flags: "Echo Request (Type 8)",
+                        size: 1472, // Large ICMP packets
+                        ttl: 64,
+                        flagged: i >= this.threshold,
+                        alert: i >= this.threshold ? "ICMP flood detected" : null
+                    };
+                }
+            },
+            // New Lateral Movement attack
+            "lateral-movement": {
+                title: "Lateral Movement Attack",
+                description: "A pattern where a potentially compromised system accesses multiple other systems within the internal network, attempting to move laterally to gain access to additional resources.",
+                pattern: "Single source accessing multiple different network segments\nConnection attempts to administrative ports (22, 445, 3389)\nPattern of traversal across network segments\nTrigger: Source connecting to >3 different subnets within 5 minutes",
+                mitigation: [
+                    "Implement network segmentation to limit lateral movement",
+                    "Restrict administrative port access between segments",
+                    "Deploy internal network monitoring and IDS",
+                    "Use strong authentication between network segments",
+                    "Implement zero trust architecture principles"
+                ],
+                alert: "Potential lateral movement detected within internal network",
+                threshold: 8, // Number of unusual connections to trigger detection
+                trustedSources: ["192.168.1.5", "192.168.1.25", "10.0.0.15"], // Trusted admin systems
+                
+                genPacket: function(i) {
+                    // Generate a sequence that mimics lateral movement
+                    const internal_hosts = [
+                        "192.168.1.100", // Source system (potentially compromised)
+                        "192.168.2.15",  // HR segment
+                        "192.168.3.22",  // Finance segment
+                        "192.168.4.35",  // Server segment
+                        "192.168.5.41",  // Database segment
+                        "192.168.6.8"    // Domain controller segment
+                    ];
+                    
+                    const progressiveMovement = Math.min(Math.floor(i/3), internal_hosts.length-2);
+                    const src_host = internal_hosts[0]; // Always the same source
+                    const dst_host = internal_hosts[progressiveMovement + 1]; // Moving through targets
+                    
+                    // Admin ports commonly used in lateral movement
+                    const lateralPorts = [22, 445, 3389, 135, 5985];
+                    const dst_port = lateralPorts[i % lateralPorts.length];
+                    
+                    // Determine protocol from port
+                    let protocol = "TCP";
+                    if (dst_port === 22) protocol = "SSH";
+                    if (dst_port === 445) protocol = "SMB";
+                    if (dst_port === 3389) protocol = "RDP";
+                    if (dst_port === 135) protocol = "RPC";
+                    
+                    const isTrusted = this.trustedSources.includes(src_host);
+                    const shouldFlag = i >= this.threshold && !isTrusted;
+                    
+                    return {
+                        timestamp: new Date(),
+                        src_ip: src_host,
+                        src_port: Math.floor(Math.random() * 10000) + 49152, // Ephemeral port range
+                        dst_ip: dst_host,
+                        dst_port: dst_port,
+                        protocol: protocol,
+                        flags: "SYN",
+                        size: 64,
+                        ttl: 64,
+                        trusted: isTrusted,
+                        segment: dst_host.split('.')[2], // Extract segment from IP
+                        flagged: shouldFlag,
+                        alert: shouldFlag ? 
+                               "Potential lateral movement: Source accessing systems across multiple segments" : null
+                    };
+                }
+            },
+            "mac-flood": {
+                title: "MAC Flooding Attack",
+                description: "An attack targeting network switches by flooding the CAM table with fake MAC addresses, potentially forcing the switch to act like a hub and broadcast all traffic.",
+                pattern: "Port 5 receiving >100 frames with different source MACs per second\nMAC table growth rate: >50 new MACs per minute on single port\nTrigger: MAC address table utilization >80% with rapid growth",
+                mitigation: [
+                    "Configure port security to limit MAC addresses per port",
+                    "Enable MAC address notification traps",
+                    "Implement DHCP snooping",
+                    "Use 802.1X authentication for network access",
+                    "Separate network into VLANs to limit flooding domains"
+                ],
+                alert: "Multiple unique MAC addresses detected on a single port",
+                threshold: 25, // Number of packets to trigger detection
+                genPacket: function(i) {
+                    // Generate random MAC address
+                    const mac = Array.from({length: 6}, () => Math.floor(Math.random() * 256).toString(16).padStart(2, '0')).join(':');
+                    return {
+                        timestamp: new Date(),
+                        mac_src: mac,
+                        mac_dst: "00:1B:44:11:3A:B7",
+                        port: "Port 5",
+                        vlan: "10",
+                        protocol: "ARP",
+                        size: 64,
+                        flagged: i >= this.threshold,
+                        alert: i >= this.threshold ? "MAC flooding detected" : null
+                    };
+                }
+            },
+            "arp-spoofing": {
+                title: "ARP Spoofing Attack",
+                description: "An attack where falsified ARP messages are sent to associate the attacker's MAC address with a legitimate IP address, allowing interception of network traffic.",
+                pattern: "Multiple ARP Reply packets claiming IP 10.0.0.1 belongs to different MAC addresses\nFrequency: Repeated ARP announcements (>1 per minute)\nTrigger: >2 different MAC addresses claiming same IP within 5 minutes",
+                mitigation: [
+                    "Use static ARP entries for critical infrastructure",
+                    "Implement ARP spoofing detection tools",
+                    "Deploy DHCP snooping",
+                    "Use VLANs to segment the network",
+                    "Implement packet filtering for ARP traffic"
+                ],
+                alert: "Multiple MAC addresses claiming the same IP address",
+                threshold: 15, // Number of packets to trigger detection
+                genPacket: function(i) {
+                    const legitimate = i < 5;
+                    const mac = legitimate ? 
+                                "00:1A:2B:3C:4D:5E" : 
+                                "00:11:22:" + Math.floor(Math.random() * 100).toString(16).padStart(2, '0') + ":" + 
+                                Math.floor(Math.random() * 100).toString(16).padStart(2, '0') + ":" + 
+                                Math.floor(Math.random() * 100).toString(16).padStart(2, '0');
+                    
+                    return {
+                        timestamp: new Date(),
+                        mac_src: mac,
+                        mac_dst: "FF:FF:FF:FF:FF:FF", // Broadcast
+                        ip_src: "0.0.0.0",
+                        ip_claimed: "10.0.0.1", // Gateway IP
+                        arp_op: "Reply (unsolicited)",
+                        protocol: "ARP",
+                        size: 64,
+                        flagged: !legitimate,
+                        alert: !legitimate ? "ARP spoofing detected" : null
+                    };
+                }
+            },
+            "vlan-hopping": {
+                title: "VLAN Hopping Attack",
+                description: "An attack where an attacker sends packets to a VLAN they should not have access to, either through switch spoofing or double tagging.",
+                pattern: "Frames with nested VLAN tags (802.1Q inside 802.1Q)\nSource from VLAN 10 appearing in VLAN 20 traffic\nTrigger: Any double-tagged frame detected on access ports",
+                mitigation: [
+                    "Disable trunk auto-negotiation (DTP) where not needed",
+                    "Explicitly configure all unused ports as access ports",
+                    "Implement native VLAN pruning",
+                    "Use private VLANs where appropriate",
+                    "Enable BPDU guard on access ports"
+                ],
+                alert: "Double-tagged VLAN frames detected (VLAN hopping)",
+                threshold: 5, // Number of packets to trigger detection
+                genPacket: function(i) {
+                    const doubleTagged = i >= 3;
+                    return {
+                        timestamp: new Date(),
+                        mac_src: "00:1D:60:B3:09:45",
+                        mac_dst: "00:23:AB:7D:1C:8F",
+                        outer_vlan: doubleTagged ? "10" : "20",
+                        inner_vlan: doubleTagged ? "20" : "-",
+                        protocol: "802.1Q",
+                        port: "Port 24",
+                        size: 68,
+                        flagged: doubleTagged,
+                        alert: doubleTagged ? "VLAN hopping attempt detected" : null
+                    };
+                }
+            },
+            "mac-spoofing": {
+                title: "MAC Spoofing Attack",
+                description: "An attack where an attacker changes their MAC address to impersonate another device, bypassing MAC-based authentication or filtering.",
+                pattern: "MAC 00:1A:2B:3C:4D:5E seen on Port 1, then Port 7 within short timeframe\nTime between location changes: <30 seconds (physically impossible)\nTrigger: Same MAC moving between ports more than twice in 5 minutes",
+                mitigation: [
+                    "Implement 802.1X for port-based network access control",
+                    "Configure port security to bind MAC addresses to ports",
+                    "Use additional authentication methods beyond MAC address",
+                    "Enable MAC move notification",
+                    "Monitor for rapid MAC address movements"
+                ],
+                alert: "Same MAC address appearing on different physical ports",
+                threshold: 10, // Number of packets to trigger detection
+                genPacket: function(i) {
+                    const ports = ["Port 1", "Port 7", "Port 12", "Port 3"];
+                    const port = ports[i % ports.length];
+                    const suspiciousMove = i >= 8 && i % 2 === 0; // Suspicious activity after certain threshold
+                    
+                    return {
+                        timestamp: new Date(),
+                        mac_src: "00:1A:2B:3C:4D:5E", // Same MAC across different ports
+                        mac_dst: "FF:FF:FF:FF:FF:FF",
+                        port: port,
+                        vlan: "10",
+                        protocol: "ARP",
+                        size: 64,
+                        flagged: suspiciousMove,
+                        alert: suspiciousMove ? "MAC spoofing detected (rapid port changes)" : null
+                    };
+                }
+            },
+            "dhcp-starvation": {
+                title: "DHCP Starvation Attack",
+                description: "An attack where an attacker floods a DHCP server with requests using different spoofed MAC addresses, exhausting the available IP address pool.",
+                pattern: ">50 DHCP Discover packets per second from Port 3\nEach with different source MAC address\nTrigger: DHCP request rate >20 per minute from single port with different MACs",
+                mitigation: [
+                    "Configure DHCP snooping",
+                    "Implement rate limiting on DHCP requests per port",
+                    "Use port security to limit MAC addresses",
+                    "Configure DHCP server to require authentication",
+                    "Segregate DHCP servers into management VLANs"
+                ],
+                alert: "Multiple DHCP requests from different MAC addresses on a single port",
+                threshold: 20, // Number of packets to trigger detection
+                genPacket: function(i) {
+                    // Generate random MAC address
+                    const mac = Array.from({length: 6}, () => Math.floor(Math.random() * 256).toString(16).padStart(2, '0')).join(':');
+                    
+                    return {
+                        timestamp: new Date(),
+                        mac_src: mac,
+                        mac_dst: "FF:FF:FF:FF:FF:FF", // Broadcast
+                        port: "Port 3",
+                        protocol: "DHCP",
+                        type: "DISCOVER",
+                        xid: Math.floor(Math.random() * 0xFFFFFFFF).toString(16),
+                        size: 342,
+                        flagged: i >= this.threshold,
+                        alert: i >= this.threshold ? "DHCP starvation attack detected" : null
+                    };
+                }
+            }
+        };
+
+        // DOM elements
+        const packetContainer = document.getElementById('packet-container');
+        const playButton = document.getElementById('play-button');
+        const timelineProgress = document.getElementById('timeline-progress');
+        const packetsCount = document.getElementById('packets-count');
+        const anomalyScore = document.getElementById('anomaly-score');
+        const timeElapsed = document.getElementById('time-elapsed');
+        const detectionAlert = document.getElementById('detection-alert');
+        const alertType = document.getElementById('alert-type');
+        const alertDetails = document.getElementById('alert-details');
+        
+        const attackTitle = document.getElementById('attack-title');
+        const infoTitle = document.getElementById('info-title');
+        const infoDescription = document.getElementById('info-description');
+        const infoPattern = document.getElementById('info-pattern');
+        const infoMitigation = document.getElementById('info-mitigation');
+
+        // Set up button event listeners
+        document.querySelectorAll('.attack-button').forEach(button => {
+            button.addEventListener('click', () => {
+                // Deactivate all buttons
+                document.querySelectorAll('.attack-button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                // Activate clicked button
+                button.classList.add('active');
+                
+                // Update attack info
+                const attackType = button.getAttribute('data-attack');
+                updateAttackInfo(attackType);
+                
+                // Reset visualization
+                resetVisualization();
+            });
+        });
+
+        // Play button functionality
+        playButton.addEventListener('click', () => {
+            // Get current selected attack
+            const activeButton = document.querySelector('.attack-button.active');
+            const attackType = activeButton.getAttribute('data-attack');
+            
+            // Disable button during simulation
+            playButton.disabled = true;
+            playButton.textContent = '⏳ Simulating...';
+            
+            // Reset visualization
+            resetVisualization();
+            
+            // Start packet generation
+            simulateAttack(attackType);
+        });
+
+        // Update attack information based on selected attack
+        function updateAttackInfo(attackType) {
+            const attack = attackData[attackType];
+            
+            attackTitle.textContent = attack.title;
+            infoTitle.textContent = attack.title;
+            infoDescription.textContent = attack.description;
+            infoPattern.textContent = attack.pattern;
+            
+            // Update mitigation list
+            infoMitigation.innerHTML = '';
+            attack.mitigation.forEach(item => {
+                const li = document.createElement('li');
+                li.textContent = item;
+                infoMitigation.appendChild(li);
+            });
+        }
+
+        // Reset visualization to initial state
+        function resetVisualization() {
+            packetContainer.innerHTML = '';
+            timelineProgress.style.width = '0%';
+            packetsCount.textContent = '0';
+            anomalyScore.textContent = '0%';
+            timeElapsed.textContent = '0s';
+            detectionAlert.classList.remove('visible');
+        }
+
+        // Simulate attack packet generation
+        function simulateAttack(attackType) {
+            const attack = attackData[attackType];
+            const totalPackets = 50;
+            let currentPacket = 0;
+            let startTime = Date.now();
+            let alertTriggered = false;
+            
+            // Create and display packets at intervals
+            const interval = setInterval(() => {
+                if (currentPacket >= totalPackets) {
+                    clearInterval(interval);
+                    playButton.disabled = false;
+                    playButton.textContent = '▶ Simulate Attack';
+                    return;
+                }
+                
+                // Generate packet data
+                const packet = attack.genPacket(currentPacket);
+                
+                // Display packet
+                displayPacket(packet, attackType);
+                
+                // Update metrics
+                currentPacket++;
+                const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+                
+                packetsCount.textContent = currentPacket;
+                timeElapsed.textContent = `${elapsedSeconds}s`;
+                
+                // Calculate anomaly score (simplistic approach)
+                const score = Math.min(100, Math.floor((currentPacket / attack.threshold) * 100));
+                anomalyScore.textContent = `${score}%`;
+                
+                // Update timeline
+                timelineProgress.style.width = `${(currentPacket / totalPackets) * 100}%`;
+                
+                // Trigger alert if threshold is reached and not already triggered
+                if (!alertTriggered && currentPacket >= attack.threshold) {
+                    alertTriggered = true;
+                    triggerAlert(attack);
+                }
+            }, 200); // Interval between packets
+        }
+
+        // Display a packet in the visualization
+        function displayPacket(packet, attackType) {
+            const packetEl = document.createElement('div');
+            packetEl.className = 'packet';
+            if (packet.flagged) {
+                packetEl.classList.add('flagged');
+            }
+            
+            // Create packet content based on attack type and layer
+            let packetContent = '';
+            
+            // Add timestamp
+            const timestamp = new Date().toLocaleTimeString('en-US', { 
+                hour12: false, 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                fractionalSecondDigits: 3
+            });
+            
+            packetContent += `<span class="timestamp">${timestamp}</span>`;
+            
+            // Layer 3 attacks
+            if (['port-scan', 'ddos', 'ip-spoofing', 'syn-flood', 'icmp-flood', 'lateral-movement'].includes(attackType)) {
+                packetContent += `<span class="ip-info src">SRC: ${packet.src_ip}:${packet.src_port}</span>`;
+                packetContent += `<span class="ip-info dst">DST: ${packet.dst_ip}:${packet.dst_port}</span>`;
+                packetContent += `<span class="protocol">${packet.protocol}</span>`;
+                
+                if (packet.flags) {
+                    packetContent += ` <span class="flag">${packet.flags}</span>`;
+                }
+                
+                // For lateral movement, display trusted/untrusted status
+                if (attackType === 'lateral-movement' && packet.trusted !== undefined) {
+                    const trustClass = packet.trusted ? 'trusted' : 'untrusted';
+                    const trustText = packet.trusted ? 'Trusted' : 'Untrusted';
+                    packetContent += ` <span class="trust-indicator ${trustClass}">${trustText}</span>`;
+                    
+                    if (packet.segment) {
+                        packetContent += ` <span class="flag">Segment: ${packet.segment}</span>`;
+                    }
+                }
+                
+                packetContent += ` <span class="size">${packet.size} bytes</span>`;
+                packetContent += ` <span class="ttl">TTL: ${packet.ttl}</span>`;
+            } 
+            // Layer 2 attacks
+            else {
+                if (packet.mac_src) {
+                    packetContent += `<span class="ip-info src">SRC MAC: ${packet.mac_src}</span>`;
+                }
+                if (packet.mac_dst) {
+                    packetContent += `<span class="ip-info dst">DST MAC: ${packet.mac_dst}</span>`;
+                }
+                if (packet.port) {
+                    packetContent += `<span class="port">${packet.port}</span>`;
+                }
+                if (packet.protocol) {
+                    packetContent += `<span class="protocol">${packet.protocol}</span>`;
+                }
+                
+                // Attack-specific fields
+                if (attackType === 'arp-spoofing' && packet.ip_claimed) {
+                    packetContent += ` <span class="flag">Claimed IP: ${packet.ip_claimed}</span>`;
+                    packetContent += ` <span class="flag">${packet.arp_op}</span>`;
+                }
+                else if (attackType === 'vlan-hopping') {
+                    packetContent += ` <span class="flag">VLAN: ${packet.outer_vlan}</span>`;
+                    if (packet.inner_vlan !== '-') {
+                        packetContent += ` <span class="flag">Inner VLAN: ${packet.inner_vlan}</span>`;
+                    }
+                }
+                else if (attackType === 'dhcp-starvation' && packet.type) {
+                    packetContent += ` <span class="flag">${packet.type}</span>`;
+                    packetContent += ` <span class="ttl">XID: ${packet.xid}</span>`;
+                }
+                
+                packetContent += ` <span class="size">${packet.size} bytes</span>`;
+            }
+            
+            // Add alert badge if flagged
+            if (packet.alert) {
+                packetContent += `<span class="alert">!</span>`;
+            }
+            
+            packetEl.innerHTML = packetContent;
+            packetContainer.insertBefore(packetEl, packetContainer.firstChild);
+            
+            // Keep only the most recent 100 packets to avoid performance issues
+            if (packetContainer.children.length > 100) {
+                packetContainer.removeChild(packetContainer.lastChild);
+            }
+        }
+
+        // Trigger alert banner
+        function triggerAlert(attack) {
+            detectionAlert.classList.add('visible');
+            alertType.textContent = attack.title;
+            alertDetails.textContent = attack.alert;
+        }
+
+        // Initialize with port scanning attack info
+        updateAttackInfo('port-scan');
+    </script>
+</body>
+</html>
